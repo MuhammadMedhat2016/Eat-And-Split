@@ -4,24 +4,40 @@ import "./index.css";
 function App() {
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [friends, setFriends] = useState([]);
+  const [isAddFriendBtnOpen, setIsAddFriendBtnOpen] = useState(false);
 
   function handleSelectFriend(friend) {
     setSelectedFriend((cur) => (cur?.id === friend.id ? null : friend));
+    setIsAddFriendBtnOpen(false)
   }
   function handleUpdateBill(bill) {
     const id = selectedFriend.id;
     setFriends((friends) => friends.map((friend) => (friend.id === id ? { ...friend, bill: bill } : friend)));
     setSelectedFriend(null);
   }
+
+  function handleAddFriendBtn() {
+    setIsAddFriendBtnOpen((isOpen) => !isOpen);
+    setSelectedFriend(null)
+  }
+
+  function handleAddFriend(friend) {
+    setFriends((friends) => [...friends, friend]);
+    setIsAddFriendBtnOpen(false);
+  }
+
   return (
     <div className="app">
-      <Sidebar
-        onSelectFriend={handleSelectFriend}
-        selectedFriend={selectedFriend}
-        friends={friends}
-        setFriends={setFriends}
-      />
-      {selectedFriend && <Split name={selectedFriend.name} onUpdateBill={handleUpdateBill} />}
+      <Sidebar>
+        <List>
+          {friends.map((friend) => (
+            <Item friend={friend} onSelectFriend={handleSelectFriend} key={friend.id} selectedFriend={selectedFriend} />
+          ))}
+        </List>
+        {isAddFriendBtnOpen && <AddFriend onAddFriend={handleAddFriend} isOpen={isAddFriendBtnOpen} />}
+        <Button onClick={handleAddFriendBtn}>{isAddFriendBtnOpen ? "Close" : "Add friend"}</Button>
+      </Sidebar>
+      {selectedFriend && <Split name={selectedFriend.name} key={selectedFriend.id} onUpdateBill={handleUpdateBill} />}
     </div>
   );
 }
@@ -32,17 +48,10 @@ function Split({ name, onUpdateBill }) {
   const fExpense = bill && expense && bill - expense;
   const [whoPaid, setWhoPaid] = useState("u");
 
-  function reset() {
-    setBill("");
-    setExpense("");
-    setWhoPaid("u");
-  }
-
   function handleBill(e) {
     e.preventDefault();
     let finalBill = Number(bill) - Number(expense);
     onUpdateBill(whoPaid === "u" ? finalBill : -finalBill);
-    reset();
   }
   return (
     <form className="form-split-bill">
@@ -63,31 +72,12 @@ function Split({ name, onUpdateBill }) {
   );
 }
 
-function Sidebar({ onSelectFriend, selectedFriend, friends, setFriends }) {
-  const [isAddFriendOpen, setIsAddFriendOpen] = useState(false);
-  function handleAddFriend(friend) {
-    setFriends((friends) => [...friends, friend]);
-    setIsAddFriendOpen(false);
-  }
-  return (
-    <div className="sidebar">
-      <List friends={friends} onSelectFriend={onSelectFriend} selectedFriend={selectedFriend} />
-      <AddFriend onAddFriend={handleAddFriend} isOpen={isAddFriendOpen} setIsOpen={setIsAddFriendOpen} />
-      <Button onClick={() => setIsAddFriendOpen((isOpen) => !isOpen)}>
-        {isAddFriendOpen ? "Close" : "Add Friend"}
-      </Button>
-    </div>
-  );
+function Sidebar({ children }) {
+  return <div className="sidebar">{children}</div>;
 }
 
-function List({ friends, onSelectFriend, selectedFriend }) {
-  return (
-    <ul>
-      {friends.map((friend) => (
-        <Item friend={friend} onSelectFriend={onSelectFriend} key={friend.id} selectedFriend={selectedFriend} />
-      ))}
-    </ul>
-  );
+function List({ children }) {
+  return <ul>{children}</ul>;
 }
 
 function Item({ friend, onSelectFriend, selectedFriend }) {
@@ -105,7 +95,7 @@ function Item({ friend, onSelectFriend, selectedFriend }) {
   );
 }
 
-function AddFriend({ onAddFriend, isOpen }) {
+function AddFriend({ onAddFriend }) {
   const [name, setName] = useState("");
   const [url, setURL] = useState("");
   function handleAddFriend(e) {
@@ -118,21 +108,17 @@ function AddFriend({ onAddFriend, isOpen }) {
       imgUrl: url,
       bill: 0,
     };
-    setName("");
-    setURL("");
     onAddFriend(friend);
   }
 
   return (
-    isOpen && (
-      <form className="form-add-friend" onSubmit={handleAddFriend}>
-        <label>🧑‍🤝‍🧑 Friend name</label>
-        <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
-        <label>🖼️ Image URL</label>
-        <input type="text" value={url} onChange={(e) => setURL(e.target.value)} />
-        <Button onClick={handleAddFriend}>ADD</Button>
-      </form>
-    )
+    <form className="form-add-friend" onSubmit={handleAddFriend}>
+      <label>🧑‍🤝‍🧑 Friend name</label>
+      <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
+      <label>🖼️ Image URL</label>
+      <input type="text" value={url} onChange={(e) => setURL(e.target.value)} />
+      <Button onClick={handleAddFriend}>ADD</Button>
+    </form>
   );
 }
 
